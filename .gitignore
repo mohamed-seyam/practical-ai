@@ -1,0 +1,38 @@
+# --- Trained models / large binaries (keep out of git; use LFS or external storage) ---
+models/
+*.h5
+*.hdf5
+*.ckpt
+*.pb
+*.onnx
+*.pt
+*.pth
+*.pkl
+*.joblib
+*.npy
+*.npz
+*.safetensors
+*.bin
+*.weights
+
+# --- Generated output + large media (audio kept locally, out of git) ---
+output/
+*.wav
+*.mp3
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

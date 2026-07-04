@@ -28,11 +28,10 @@ def build_data(text, Tx = 40, stride = 3):
     X = []
     Y = []
 
-    ### START CODE HERE ### (≈ 3 lines)
+    # (≈ 3 lines)
     for i in range(0, len(text) - Tx, stride):
         X.append(text[i: i + Tx])
         Y.append(text[i + Tx])
-    ### END CODE HERE ###
     
     print('number of training examples:', len(X))
     
@@ -54,8 +53,8 @@ def vectorization(X, Y, n_x, char_indices, Tx = 40):
     """
     
     m = len(X)
-    x = np.zeros((m, Tx, n_x), dtype=np.bool)
-    y = np.zeros((m, n_x), dtype=np.bool)
+    x = np.zeros((m, Tx, n_x), dtype=bool)
+    y = np.zeros((m, n_x), dtype=bool)
     for i, sentence in enumerate(X):
         for t, char in enumerate(sentence):
             x[i, t, char_indices[char]] = 1

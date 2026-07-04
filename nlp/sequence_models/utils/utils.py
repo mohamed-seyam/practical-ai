@@ -118,13 +118,11 @@ def rnn_backward(X, Y, parameters, cache):
     gradients['db'], gradients['dby'] = np.zeros_like(b), np.zeros_like(by)
     gradients['da_next'] = np.zeros_like(a[0])
     
-    ### START CODE HERE ###
     # Backpropagate through time
     for t in reversed(range(len(X))):
         dy = np.copy(y_hat[t])
         dy[Y[t]] -= 1
         gradients = rnn_step_backward(dy, gradients, parameters, x[t], a[t], a[t-1])
-    ### END CODE HERE ###
     
     return gradients, a
 

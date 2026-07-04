@@ -20,6 +20,10 @@ output/
 *.wav
 *.mp3
 
+# --- Pretrained word vectors (large; download separately) ---
+glove*.txt
+*.zip
+
 # --- Python ---
 __pycache__/
 *.py[cod]

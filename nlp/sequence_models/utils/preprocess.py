@@ -24,12 +24,25 @@ from music_utils import *
 def __parse_midi(data_fn):
     # Parse the MIDI data for separate melody and accompaniment parts.
     midi_data = converter.parse(data_fn)
+    # Newer music21 exposes a Metadata element via integer indexing/iteration,
+    # so work off the explicit list of Parts to keep the original indices valid.
+    midi_parts = list(midi_data.getElementsByClass(stream.Part))
     # Get melody part, compress into single voice.
-    melody_stream = midi_data[5]     # For Metheny piece, Melody is Part #5.
-    melody1, melody2 = melody_stream.getElementsByClass(stream.Voice)
-    for j in melody2:
-        melody1.insert(j.offset, j)
-    melody_voice = melody1
+    melody_stream = midi_parts[5]     # For Metheny piece, Melody is Part #5.
+    melody_voices = list(melody_stream.getElementsByClass(stream.Voice))
+    if len(melody_voices) >= 2:
+        melody1, melody2 = melody_voices[0], melody_voices[1]
+        for j in melody2:
+            melody1.insert(j.offset, j)
+        melody_voice = melody1
+    elif len(melody_voices) == 1:
+        melody_voice = melody_voices[0]
+    else:
+        # music21 >= 7 imports MIDI notes directly into the Part without
+        # wrapping them in Voice objects, so build a single voice ourselves.
+        melody_voice = stream.Voice()
+        for n in melody_stream.flatten().notesAndRests:
+            melody_voice.insert(n.offset, n)
 
     for i in melody_voice:
         if i.quarterLength == 0.0:
@@ -46,7 +59,7 @@ def __parse_midi(data_fn):
     # Verified are good parts: 0, 1, 6, 7 '''
     partIndices = [0, 1, 6, 7]
     comp_stream = stream.Voice()
-    comp_stream.append([j.flat for i, j in enumerate(midi_data) 
+    comp_stream.append([j.flatten() for i, j in enumerate(midi_parts)
         if i in partIndices])
 
     # Full stream containing both the melody and the accompaniment. 
@@ -63,13 +76,15 @@ def __parse_midi(data_fn):
     solo_stream = stream.Voice()
     for part in full_stream:
         curr_part = stream.Part()
-        curr_part.append(part.getElementsByClass(instrument.Instrument))
-        curr_part.append(part.getElementsByClass(tempo.MetronomeMark))
-        curr_part.append(part.getElementsByClass(key.KeySignature))
-        curr_part.append(part.getElementsByClass(meter.TimeSignature))
-        curr_part.append(part.getElementsByOffset(476, 548, 
-                                                  includeEndBoundary=True))
-        cp = curr_part.flat
+        # music21 >= 7 returns StreamIterators here, which .append() rejects,
+        # so materialize them into lists first.
+        curr_part.append(list(part.getElementsByClass(instrument.Instrument)))
+        curr_part.append(list(part.getElementsByClass(tempo.MetronomeMark)))
+        curr_part.append(list(part.getElementsByClass(key.KeySignature)))
+        curr_part.append(list(part.getElementsByClass(meter.TimeSignature)))
+        curr_part.append(list(part.getElementsByOffset(476, 548,
+                                                  includeEndBoundary=True)))
+        cp = curr_part.flatten()
         solo_stream.insert(cp)
 
     # Group by measure so you can classify. 
@@ -105,8 +120,14 @@ def __parse_midi(data_fn):
     #           actually show up, while the accompaniment's beat 1 right after does.
     #           Actually on second thought: melody/comp start on Ab, and resolve to
     #           the same key (Ab) so could actually just cut out last measure to loop.
-    #           Decided: just cut out the last measure. 
-    del chords[len(chords) - 1]
+    #           Decided: just cut out the last measure.
+    # On the music21 version this was written for, len(measures) == len(chords)
+    # held exactly. Modern music21 (>=7) parses MIDI offsets slightly
+    # differently, so instead of asserting equality we align both to their
+    # shared range (still dropping the trailing partial measure).
+    n = min(len(measures), len(chords)) - 1
+    measures = OrderedDict((i, measures[i]) for i in range(n))
+    chords = OrderedDict((i, chords[i]) for i in range(n))
     assert len(chords) == len(measures)
 
     return measures, chords

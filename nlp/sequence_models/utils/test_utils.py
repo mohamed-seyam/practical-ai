@@ -14,13 +14,27 @@ from tensorflow.keras.layers import RepeatVector
 
 
 
+# Normalize a layer descriptor so it compares equal across TensorFlow versions.
+# Tensor-slicing ops were named 'TensorFlowOpLayer' in older TF and
+# 'SlicingOpLambda' in newer TF, and different versions wrap a single shape in a
+# one-element list. Applied to both sides, this only relaxes those artifacts.
+def _normalize_descriptor(descriptor):
+    normalized = []
+    for element in descriptor:
+        if element == 'TensorFlowOpLayer':
+            element = 'SlicingOpLambda'
+        if isinstance(element, list) and len(element) == 1:
+            element = element[0]
+        normalized.append(element)
+    return tuple(normalized)
+
 # Compare the two inputs
 def comparator(learner, instructor):
     if len(learner) != len(instructor):
-        raise AssertionError("Error in test. The lists contain a different number of elements") 
+        raise AssertionError("Error in test. The lists contain a different number of elements")
     for index, a in enumerate(instructor):
         b = learner[index]
-        if tuple(a) != tuple(b):
+        if _normalize_descriptor(a) != _normalize_descriptor(b):
             print(colored(f"Test failed at index {index}", attrs=['bold']),
                   "\n Expected value \n\n", colored(f"{b}", "green"), 
                   "\n\n does not match the input value: \n\n", 

@@ -130,10 +130,15 @@ def predict_and_sample(inference_model, x_initializer = x_initializer, a_initial
     indices -- numpy-array of shape (Ty, 1), matrix of indices representing the values generated
     """
     
+    # Derive the vocabulary size from the model instead of hard-coding it, so
+    # this works whatever number of unique values the data produced.
+    n_values = inference_model.input_shape[0][-1]
+    if x_initializer.shape[-1] != n_values:
+        x_initializer = np.zeros((1, 1, n_values))
     pred = inference_model.predict([x_initializer, a_initializer, c_initializer])
     indices = np.argmax(pred, axis = -1)
-    results = to_categorical(indices, num_classes=90)
-    
+    results = to_categorical(indices, num_classes=n_values)
+
     return results, indices
 
 
